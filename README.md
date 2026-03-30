@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="./5B1BA9DC-191C-44A2-9C63-499DF06C69E5.png" alt="MAIL IN THE SHELL" width="920" />
+  <img src="5B1BA9DC-191C-44A2-9C63-499DF06C69E5.png?raw=1" alt="MAIL IN THE SHELL" width="920" />
   <p><code>SECTION 09 // MAIL BUS // 電脳通信</code></p>
   <p><strong>Local-first batch email operations console with a browser UI and Python CLI for controlled SMTP sends, resumable state, IMAP sent-copy support, activity tracing, and on-machine credential handling.</strong></p>
   <p>
@@ -14,10 +14,10 @@
 <table>
   <tr>
     <td width="76%" valign="top">
-      <img src="./docs/readme-interface.png" alt="MAIL IN THE SHELL interface screenshot" />
+      <img src="docs/readme-interface.png?raw=1" alt="MAIL IN THE SHELL interface screenshot" />
     </td>
     <td width="24%" valign="top">
-      <img src="./web/top-right.gif" alt="Neural map live feed" />
+      <img src="web/top-right.gif?raw=1" alt="Neural map live feed" />
       <br />
       <br />
       <table>
