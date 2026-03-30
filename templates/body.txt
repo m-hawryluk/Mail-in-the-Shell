@@ -1,0 +1,10 @@
+Hi {{name}},
+
+I am reaching out with a short update for {{company}}.
+
+We prepared a new offer under code {{offer_code}} and I can send the details if this is relevant for you.
+
+If you are not the right contact, feel free to reply and point me to the right person.
+
+Best regards,
+Your Team

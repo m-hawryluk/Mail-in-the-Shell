@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MAIL IN THE SHELL</title>
+    <link rel="stylesheet" href="/app.css" />
+    <script src="/app.js" defer></script>
+  </head>
+  <body>
+    <div class="system-shell">
+      <header class="system-header">
+        <section class="poster-plane">
+          <div class="header-toolbar">
+            <button id="overlayToggleBtn" class="ghost small-button" type="button">SYSTEM GUIDE</button>
+          </div>
+          <p class="eyebrow">SECTION 09 // MAIL BUS // 電脳通信</p>
+          <div class="header-hero-row">
+            <div class="title-mark-frame">
+              <img class="title-mark" src="/title-mark.png" alt="Mail in the Shell" />
+              <div class="signal-row" aria-hidden="true">
+                <span>AUTH // VERIFY FIRST</span>
+                <span>QUEUE // DRY RUN</span>
+                <span>TRACE // LOCAL ONLY</span>
+              </div>
+              <div class="telemetry-ribbon" aria-hidden="true">
+                <span>NODE 0x09</span>
+                <span>SMTP BUS 0x1D1</span>
+                <span>IMAP APPEND 0x3E1</span>
+                <span>QUEUE STATE READY</span>
+                <span>RETICLE LOCK OFF</span>
+              </div>
+
+              <section class="status-block emphasis status-merged">
+                <div class="status-matrix">
+                  <span class="hud-inline-label">AUTH BUS</span>
+                  <span id="securityBanner">Loading security status…</span>
+                  <span class="hud-inline-label">PRIMARY OBJECTIVE</span>
+                  <span id="workflowStatus">Run TEST LOGIN to confirm mailbox access, then SEND TEST EMAIL before releasing a batch.</span>
+                </div>
+              </section>
+            </div>
+
+            <div class="corner-stack">
+              <div class="corner-visual">
+                <img class="surveillance-image" src="/top-right.gif" alt="Surveillance system animation" />
+                <div class="surveillance-copy" aria-hidden="true">
+                  <span>NEURAL MAP // LIVE FEED</span>
+                  <span>RETICLE // STANDBY</span>
+                </div>
+              </div>
+
+              <section class="micro-grid compact-micro-grid">
+                <article>
+                  <span>ACTIVE BLADE</span>
+                  <strong id="activeBladeLabel">LINK // 接続</strong>
+                </article>
+                <article>
+                  <span>LINK</span>
+                  <strong id="connectionBladeMeta">Awaiting transport</strong>
+                </article>
+                <article>
+                  <span>COMPOSE</span>
+                  <strong id="composeBladeMeta">0 rows loaded</strong>
+                </article>
+                <article>
+                  <span>REVIEW</span>
+                  <strong id="reviewBladeMeta">No preview</strong>
+                </article>
+                <article>
+                  <span>TRACE</span>
+                  <strong id="activityBladeMeta">0 local entries</strong>
+                </article>
+                <article>
+                  <span>ACCESS</span>
+                  <strong>LOCAL NODE</strong>
+                </article>
+              </section>
+            </div>
+          </div>
+
+        </section>
+      </header>
+
+      <nav class="blade-nav" aria-label="Primary sections" role="tablist">
+        <button id="bladeTabConnection" class="blade-tab is-active" type="button" role="tab" aria-selected="true" aria-controls="bladeConnection" data-blade-target="connection">
+          <span class="blade-index">0x01</span>
+          <span class="blade-title">LINK // 接続</span>
+          <span class="blade-subtitle">Verify transport and sender identity</span>
+        </button>
+        <button id="bladeTabCompose" class="blade-tab" type="button" role="tab" aria-selected="false" aria-controls="stepCampaign" data-blade-target="compose">
+          <span class="blade-index">0x02</span>
+          <span class="blade-title">COMPOSE // 構築</span>
+          <span class="blade-subtitle">Load recipients, write the message, send a fixed test</span>
+        </button>
+        <button id="bladeTabReview" class="blade-tab" type="button" role="tab" aria-selected="false" aria-controls="stepViewer" data-blade-target="review">
+          <span class="blade-index">0x03</span>
+          <span class="blade-title">REVIEW // 検証</span>
+          <span class="blade-subtitle">Preview, validate, and release the next batch</span>
+        </button>
+        <button id="bladeTabActivity" class="blade-tab" type="button" role="tab" aria-selected="false" aria-controls="bladeActivity" data-blade-target="activity">
+          <span class="blade-index">0x04</span>
+          <span class="blade-title">TRACE // 記録</span>
+          <span class="blade-subtitle">Inspect the local activity stream and export the log</span>
+        </button>
+      </nav>
+
+      <main id="bladeStage" class="blade-stage" data-direction="forward">
+        <section id="bladeConnection" class="blade-panel is-active" data-blade="connection" role="tabpanel">
+          <header class="blade-header">
+            <div class="blade-head-copy">
+              <p class="hud-label">LINK BLADE // 送信経路</p>
+              <h2>Verify transport and sender identity</h2>
+              <p class="blade-copy">One job on this blade: confirm the outbound route and mailbox identity before you touch campaign traffic.</p>
+            </div>
+            <div class="blade-action-row">
+              <button id="testConnectionBtn" class="primary" type="button">TEST LOGIN</button>
+              <button id="saveSettingsBtn" type="button">SAVE DEFAULTS</button>
+              <button id="clearSavedPasswordBtn" class="ghost" type="button">CLEAR KEYCHAIN</button>
+            </div>
+          </header>
+
+          <div class="blade-layout connection-layout">
+            <section class="module-panel dominant-module">
+              <div class="module-head">
+                <div>
+                  <p class="hud-label">SMTP CORE // 送信経路</p>
+                  <h3>Outbound transport</h3>
+                </div>
+                <span class="module-tag">PRIMARY</span>
+              </div>
+
+              <div class="field-grid two-column">
+                <label>
+                  <span>SMTP host</span>
+                  <input id="smtpHost" name="smtp_host" type="text" autocomplete="off" spellcheck="false" placeholder="smtp.your-provider.com" />
+                </label>
+                <label>
+                  <span>Port</span>
+                  <input id="smtpPort" name="smtp_port" type="number" min="1" max="65535" inputmode="numeric" value="587" />
+                </label>
+                <label>
+                  <span>SMTP username</span>
+                  <input id="smtpUsername" name="smtp_username" type="email" autocomplete="username" spellcheck="false" value="hello@example.com" />
+                </label>
+                <label>
+                  <span>Password</span>
+                  <input id="smtpPassword" name="smtp_password" type="password" autocomplete="current-password" />
+                </label>
+                <label>
+                  <span>From email</span>
+                  <input id="fromEmail" name="from_email" type="email" autocomplete="email" spellcheck="false" value="hello@example.com" />
+                </label>
+                <label>
+                  <span>From name</span>
+                  <input id="fromName" name="from_name" type="text" autocomplete="organization-title" value="Mail in the Shell" />
+                </label>
+                <label>
+                  <span>Reply-To</span>
+                  <input id="replyTo" name="reply_to" type="email" autocomplete="email" spellcheck="false" value="hello@example.com" />
+                </label>
+                <label>
+                  <span>Unsubscribe email</span>
+                  <input id="unsubscribeEmail" name="unsubscribe_email" type="email" autocomplete="email" spellcheck="false" placeholder="optional" />
+                </label>
+              </div>
+
+              <div class="toggle-row">
+                <label class="toggle-chip">
+                  <input id="useStarttls" name="use_starttls" type="checkbox" checked />
+                  <span>Use STARTTLS</span>
+                </label>
+                <label class="toggle-chip">
+                  <input id="useSsl" name="use_ssl" type="checkbox" />
+                  <span>Use SSL</span>
+                </label>
+                <label class="toggle-chip">
+                  <input id="verifyTls" name="verify_tls" type="checkbox" checked />
+                  <span>Verify TLS certificate</span>
+                </label>
+                <label class="toggle-chip">
+                  <input id="savePasswordToKeychain" name="save_password_to_keychain" type="checkbox" />
+                  <span>Save password to macOS Keychain</span>
+                </label>
+              </div>
+              <p class="module-note">Typical setup: STARTTLS on port 587 or SSL on port 465. A closed connection usually means the mode or port is wrong.</p>
+            </section>
+
+            <aside class="support-stack">
+              <section class="module-panel">
+                <div class="module-head">
+                  <div>
+                    <p class="hud-label">SERVER COPY // 送信控え</p>
+                    <h3>IMAP sent-copy layer</h3>
+                  </div>
+                  <span class="module-tag">SUPPORT</span>
+                </div>
+
+                <label class="toggle-chip wide">
+                  <input id="saveSentCopy" name="save_sent_copy" type="checkbox" />
+                  <span>Append sent mail into the server Sent folder</span>
+                </label>
+
+                <div class="field-grid compact-grid">
+                  <label>
+                    <span>IMAP host</span>
+                    <input id="imapHost" name="imap_host" type="text" autocomplete="off" spellcheck="false" placeholder="imap.your-provider.com" />
+                  </label>
+                  <label>
+                    <span>IMAP port</span>
+                    <input id="imapPort" name="imap_port" type="number" min="1" max="65535" inputmode="numeric" value="993" />
+                  </label>
+                  <label>
+                    <span>IMAP username</span>
+                    <input id="imapUsername" name="imap_username" type="email" autocomplete="username" spellcheck="false" value="hello@example.com" />
+                  </label>
+                  <label>
+                    <span>IMAP password</span>
+                    <input id="imapPassword" name="imap_password" type="password" autocomplete="current-password" placeholder="leave blank to reuse SMTP password" />
+                  </label>
+                  <label>
+                    <span>Sent folder name</span>
+                    <input id="imapSentFolder" name="imap_sent_folder" type="text" autocomplete="off" spellcheck="false" value="Sent" />
+                  </label>
+                  <label class="toggle-chip inline-chip">
+                    <input id="imapUseSsl" name="imap_use_ssl" type="checkbox" checked />
+                    <span>Use IMAP SSL</span>
+                  </label>
+                </div>
+
+                <div class="toggle-row tight-row">
+                  <label class="toggle-chip">
+                    <input id="imapVerifyTls" name="imap_verify_tls" type="checkbox" checked />
+                    <span>Verify IMAP TLS certificate</span>
+                  </label>
+                </div>
+                <p class="module-note">If enabled, the app connects to IMAP before sending and appends each sent message into the folder above. Typical IMAP SSL setup uses port 993.</p>
+              </section>
+
+              <section class="module-panel diagnostic-panel" aria-hidden="true">
+                <div class="module-head">
+                  <div>
+                    <p class="hud-label">STATUS MAP // 監視層</p>
+                    <h3>Transport diagnostics</h3>
+                  </div>
+                  <span class="module-tag">HUD</span>
+                </div>
+                <ul class="diagnostic-list">
+                  <li>VERIFY LOGIN is the only dominant action on this blade.</li>
+                  <li>Direction rule: horizontal changes blades, vertical stays inside the active subsystem.</li>
+                  <li>Brighter brackets indicate the current tactical objective.</li>
+                </ul>
+              </section>
+            </aside>
+          </div>
+        </section>
+
+        <section id="stepCampaign" class="blade-panel" data-blade="compose" hidden role="tabpanel">
+          <header class="blade-header">
+            <div class="blade-head-copy">
+              <p class="hud-label">COMPOSE BLADE // 構築</p>
+              <h2>Build the outgoing message and send the fixed test mail</h2>
+              <p class="blade-copy">One job on this blade: shape the campaign payload, then validate the live message with SEND TEST EMAIL.</p>
+            </div>
+            <div class="blade-action-row">
+              <button id="sendTestEmailBtn" class="primary" type="button">SEND TEST EMAIL</button>
+            </div>
+          </header>
+
+          <div class="blade-layout compose-layout">
+            <section class="module-panel dominant-module">
+              <div class="module-head">
+                <div>
+                  <p class="hud-label">TARGET DATA // 宛先群</p>
+                  <h3>Recipients + message body</h3>
+                </div>
+                <span class="module-tag">PRIMARY</span>
+              </div>
+
+              <div class="compose-stack">
+                <label>
+                  <span>Recipient emails</span>
+                  <textarea id="recipientList" name="recipient_list" spellcheck="false" placeholder="anna@example.com, piotr@example.com, sales@example.com"></textarea>
+                </label>
+
+                <div class="field-grid two-column">
+                  <label>
+                    <span>Subject template</span>
+                    <input id="subjectLine" name="subject_line" type="text" autocomplete="off" spellcheck="false" placeholder="{{name}}, a short follow-up for {{company}}" />
+                  </label>
+                  <label>
+                    <span>Email format</span>
+                    <select id="bodyMode" name="body_mode">
+                      <option value="html">HTML only</option>
+                      <option value="text">Plain text only</option>
+                      <option value="both">HTML + plain text</option>
+                    </select>
+                  </label>
+                </div>
+
+                <section id="htmlComposerSection" class="composer-module">
+                  <div class="module-head subhead">
+                    <div>
+                      <p class="hud-label">HTML BUS // 視覚層</p>
+                      <h3>HTML payload</h3>
+                    </div>
+                  </div>
+                  <label class="upload-module">
+                    <span>Load HTML email</span>
+                    <input id="htmlFileInput" name="html_file" type="file" accept=".html,text/html" />
+                  </label>
+                  <label>
+                    <span>HTML email content</span>
+                    <textarea id="htmlContent" name="html_content" spellcheck="false" placeholder="Paste or load the HTML email here"></textarea>
+                  </label>
+                </section>
+
+                <section id="textComposerSection" class="composer-module">
+                  <div class="module-head subhead">
+                    <div>
+                      <p class="hud-label">TEXT BUS // 素文</p>
+                      <h3>Plain-text payload</h3>
+                    </div>
+                  </div>
+                  <label class="upload-module">
+                    <span>Load plain-text email</span>
+                    <input id="textFileInput" name="text_file" type="file" accept=".txt,text/plain" />
+                  </label>
+                  <label>
+                    <span>Plain-text email content</span>
+                    <textarea id="textContent" name="text_content" spellcheck="false" placeholder="Paste the plain-text email here"></textarea>
+                  </label>
+                </section>
+              </div>
+            </section>
+
+            <aside class="support-stack">
+              <section class="module-panel">
+                <div class="module-head">
+                  <div>
+                    <p class="hud-label">TEMPLATE CACHE // 雛形</p>
+                    <h3>Template library</h3>
+                  </div>
+                  <span class="module-tag">SUPPORT</span>
+                </div>
+                <div class="field-grid compact-grid">
+                  <label>
+                    <span>Template name</span>
+                    <input id="templateName" name="template_name" type="text" autocomplete="off" spellcheck="false" placeholder="cold-intro-html" />
+                  </label>
+                  <label>
+                    <span>Saved templates</span>
+                    <select id="savedTemplateSelect" name="saved_template">
+                      <option value="">No saved templates yet</option>
+                    </select>
+                  </label>
+                </div>
+                <div class="stacked-buttons">
+                  <button id="saveTemplateBtn" type="button">SAVE TEMPLATE</button>
+                  <button id="loadTemplateBtn" class="ghost" type="button">LOAD TEMPLATE</button>
+                </div>
+              </section>
+
+              <section class="module-panel">
+                <div class="module-head">
+                  <div>
+                    <p class="hud-label">CAMPAIGN STATE // 進行</p>
+                    <h3>Saved campaigns</h3>
+                  </div>
+                  <span class="module-tag">SUPPORT</span>
+                </div>
+                <div class="field-grid compact-grid">
+                  <label>
+                    <span>Campaign name</span>
+                    <input id="campaignName" name="campaign_name" type="text" autocomplete="off" spellcheck="false" placeholder="march-factory-outreach" />
+                  </label>
+                  <label>
+                    <span>Saved campaigns</span>
+                    <select id="savedCampaignSelect" name="saved_campaign">
+                      <option value="">No saved campaigns yet</option>
+                    </select>
+                  </label>
+                </div>
+                <div class="stacked-buttons">
+                  <button id="saveCampaignBtn" type="button">SAVE CAMPAIGN</button>
+                  <button id="loadCampaignBtn" class="ghost" type="button">LOAD CAMPAIGN</button>
+                </div>
+                <p class="module-note">Saved campaigns keep recipients, message content, attachments, and batch settings. Resume progress stays tied to the campaign name and recipient list.</p>
+              </section>
+
+              <section class="module-panel">
+                <div class="module-head">
+                  <div>
+                    <p class="hud-label">PAYLOAD ACCESSORIES // 添付</p>
+                    <h3>Attachments</h3>
+                  </div>
+                  <span class="module-tag">OPTIONAL</span>
+                </div>
+                <label class="upload-module">
+                  <span>Add attachment files</span>
+                  <input id="attachmentInput" name="attachments" type="file" multiple />
+                </label>
+                <p id="attachmentSummary" class="module-note">No attachments loaded.</p>
+                <div id="attachmentList" class="attachment-list"></div>
+              </section>
+
+              <section class="module-panel">
+                <div class="module-head">
+                  <div>
+                    <p class="hud-label">BATCH ENGINE // 制御</p>
+                    <h3>Batch settings</h3>
+                  </div>
+                  <span class="module-tag">RULES</span>
+                </div>
+                <div class="field-grid compact-grid">
+                  <label>
+                    <span>Batch size</span>
+                    <input id="batchSize" name="batch_size" type="number" min="1" inputmode="numeric" value="100" />
+                  </label>
+                  <label>
+                    <span>Pause between emails (seconds)</span>
+                    <input id="pauseSeconds" name="pause_seconds" type="number" min="0" step="0.1" inputmode="decimal" value="1" />
+                  </label>
+                  <label>
+                    <span>Max retries per row</span>
+                    <input id="maxAttempts" name="max_attempts" type="number" min="1" inputmode="numeric" value="3" />
+                  </label>
+                  <label class="toggle-chip inline-chip">
+                    <input id="retryExhausted" name="retry_exhausted" type="checkbox" />
+                    <span>Retry rows already paused after failures</span>
+                  </label>
+                </div>
+              </section>
+            </aside>
+          </div>
+        </section>
+
+        <section id="stepViewer" class="blade-panel" data-blade="review" hidden role="tabpanel">
+          <header class="blade-header">
+            <div class="blade-head-copy">
+              <p class="hud-label">REVIEW BLADE // 検証</p>
+              <h2>Preview the next slice, then release the next batch</h2>
+              <p class="blade-copy">One job on this blade: inspect the rendered message, confirm the next recipients, and decide whether the batch should move.</p>
+            </div>
+            <div class="blade-action-row">
+              <button id="previewBtn" class="primary" type="button">PREVIEW BATCH</button>
+              <button id="sendBtn" class="danger" type="button">SEND BATCH</button>
+              <button id="resetStateBtn" class="ghost" type="button">RESET PROGRESS</button>
+            </div>
+          </header>
+
+          <div class="blade-layout review-layout">
+            <section class="preview-stage">
+              <section class="module-panel progress-module">
+                <div class="module-head">
+                  <div>
+                    <p class="hud-label">QUEUE STATUS // 送信管理</p>
+                    <h3 id="progressHeadline">0 of 0 sendable emails sent</h3>
+                  </div>
+                  <span id="progressPercent" class="progress-percent">0%</span>
+                </div>
+                <div class="progress-track" aria-hidden="true">
+                  <div id="progressFill" class="progress-fill"></div>
+                </div>
+                <div class="progress-meta">
+                  <span id="progressCaption">Preview a batch to initialize the counter.</span>
+                  <span id="progressBreakdown">Ready now 0</span>
+                </div>
+              </section>
+
+              <div class="summary-grid">
+                <article><span>Ready now</span><strong id="summaryReady">0</strong></article>
+                <article><span>Eligible remaining</span><strong id="summaryEligible">0</strong></article>
+                <article><span>Already sent</span><strong id="summarySent">0</strong></article>
+                <article><span>Invalid emails</span><strong id="summaryInvalid">0</strong></article>
+                <article><span>Duplicates</span><strong id="summaryDuplicates">0</strong></article>
+                <article><span>Missing fields</span><strong id="summaryMissing">0</strong></article>
+              </div>
+
+              <div class="telemetry-grid">
+                <span id="campaignKeyText">Campaign key: not generated yet</span>
+                <span id="stateFileText">State file: not generated yet</span>
+                <span id="bodyModeText">Format: HTML only</span>
+                <span id="attachmentCountText">Attachments: 0</span>
+              </div>
+
+              <section class="module-panel canvas-module">
+                <div class="module-head">
+                  <div>
+                    <p class="hud-label">LIVE RENDER // 視覚確認</p>
+                    <h3>Outgoing message canvas</h3>
+                  </div>
+                  <span class="module-tag">PRIMARY</span>
+                </div>
+                <div class="canvas-frame">
+                  <div class="canvas-reticle" aria-hidden="true"></div>
+                  <iframe id="htmlPreviewFrame" title="HTML email preview" sandbox=""></iframe>
+                </div>
+              </section>
+            </section>
+
+            <aside class="support-stack review-sidebar">
+              <section class="module-panel">
+                <div class="module-head">
+                  <div>
+                    <p class="hud-label">RENDERED SUBJECT // 件名</p>
+                    <h3>Subject lock</h3>
+                  </div>
+                  <span class="module-tag">HUD</span>
+                </div>
+                <pre id="sampleSubject" class="code-panel">Preview a batch to see the rendered subject.</pre>
+              </section>
+
+              <section class="module-panel">
+                <div class="module-head">
+                  <div>
+                    <p class="hud-label">RENDERED TEXT // 本文</p>
+                    <h3>Plain-text fallback</h3>
+                  </div>
+                  <span class="module-tag">HUD</span>
+                </div>
+                <pre id="sampleText" class="code-panel">Preview a batch to see the rendered plain-text email.</pre>
+              </section>
+
+              <section class="module-panel">
+                <div class="module-head">
+                  <div>
+                    <p class="hud-label">NEXT TARGETS // 次対象</p>
+                    <h3>Next recipients</h3>
+                  </div>
+                  <span class="module-tag">HUD</span>
+                </div>
+                <ul id="nextRecipientList" class="list-panel"></ul>
+              </section>
+
+              <section class="module-panel warning-module">
+                <div class="module-head">
+                  <div>
+                    <p class="hud-label">WARNINGS // 警告</p>
+                    <h3>Queue anomalies</h3>
+                  </div>
+                  <span class="module-tag">WATCH</span>
+                </div>
+                <ul id="missingList" class="list-panel muted-list"></ul>
+              </section>
+            </aside>
+          </div>
+        </section>
+
+        <section id="bladeActivity" class="blade-panel" data-blade="activity" hidden role="tabpanel">
+          <header class="blade-header">
+            <div class="blade-head-copy">
+              <p class="hud-label">TRACE BLADE // 記録</p>
+              <h2>Inspect the local activity stream</h2>
+              <p class="blade-copy">One job on this blade: audit what happened, export the trace, and keep the operational record readable.</p>
+            </div>
+            <div class="blade-action-row">
+              <button id="exportLogBtn" class="primary" type="button">EXPORT CSV</button>
+              <button id="clearLogBtn" class="ghost" type="button">CLEAR LOG</button>
+            </div>
+          </header>
+
+          <div class="blade-layout activity-layout">
+            <section class="module-panel dominant-module">
+              <div class="module-head">
+                <div>
+                  <p class="hud-label">APPEND-ONLY TRACE // 履歴</p>
+                  <h3>Activity stream</h3>
+                </div>
+                <span class="module-tag">PRIMARY</span>
+              </div>
+              <p class="module-note">Routine validation should appear inline in the active blade. This stream is for history, send results, warnings, and exported local diagnostics.</p>
+              <div id="activityLog" class="activity-log" role="log" aria-live="polite" aria-relevant="additions text"></div>
+            </section>
+
+            <aside class="support-stack">
+              <section class="module-panel diagnostic-panel" aria-hidden="true">
+                <div class="module-head">
+                  <div>
+                    <p class="hud-label">ACCESS GUIDE // 操作</p>
+                    <h3>Directional controls</h3>
+                  </div>
+                  <span class="module-tag">HUD</span>
+                </div>
+                <ul class="diagnostic-list">
+                  <li>Left or right arrow changes the active blade when the cursor is not inside a text field.</li>
+                  <li>The System Guide overlay keeps the current blade in place and exposes quick actions.</li>
+                  <li>Brightest contrast is reserved for the currently actionable system state.</li>
+                </ul>
+              </section>
+            </aside>
+          </div>
+        </section>
+      </main>
+
+      <aside class="tactical-dock">
+        <div class="dock-copy">
+          <p class="hud-label">QUICK ACCESS // 割込</p>
+          <p>Directional rule: horizontal changes blades, vertical stays inside the current subsystem. The dock keeps the send path visible without leaving context.</p>
+        </div>
+        <div class="dock-actions">
+          <button id="testConnectionBtnSticky" class="primary small-button" type="button">TEST LOGIN</button>
+          <button id="sendTestEmailBtnSticky" class="small-button" type="button">SEND TEST EMAIL</button>
+          <button id="previewBtnSticky" class="small-button" type="button">PREVIEW BATCH</button>
+          <button id="sendBtnSticky" class="danger small-button" type="button">SEND BATCH</button>
+        </div>
+      </aside>
+
+      <section id="commandOverlay" class="command-overlay" hidden>
+        <button id="overlayBackdrop" class="overlay-backdrop" type="button" aria-label="Close system guide"></button>
+        <div class="overlay-panel" role="dialog" aria-modal="true" aria-labelledby="overlayTitle">
+          <header class="overlay-head">
+            <div>
+              <p class="hud-label">TACTICAL OVERLAY // 割込層</p>
+              <h2 id="overlayTitle">System guide + rapid actions</h2>
+            </div>
+            <button id="overlayCloseBtn" class="ghost small-button" type="button">CLOSE</button>
+          </header>
+
+          <div class="overlay-grid">
+            <section class="module-panel">
+              <div class="module-head">
+                <div>
+                  <p class="hud-label">LIVE OBJECTIVE // 任務</p>
+                  <h3>Current directive</h3>
+                </div>
+                <span class="module-tag">HUD</span>
+              </div>
+              <p id="overlayWorkflowStatus" class="overlay-status">Run TEST LOGIN to confirm mailbox access, then SEND TEST EMAIL before releasing a batch.</p>
+            </section>
+
+            <section class="module-panel">
+              <div class="module-head">
+                <div>
+                  <p class="hud-label">RAPID ACTIONS // 近道</p>
+                  <h3>Critical controls</h3>
+                </div>
+                <span class="module-tag">FAST</span>
+              </div>
+              <div class="stacked-buttons">
+                <button id="testConnectionBtnOverlay" class="primary" type="button">TEST LOGIN</button>
+                <button id="sendTestEmailBtnOverlay" type="button">SEND TEST EMAIL</button>
+                <button id="previewBtnOverlay" type="button">PREVIEW BATCH</button>
+                <button id="sendBtnOverlay" class="danger" type="button">SEND BATCH</button>
+              </div>
+            </section>
+
+            <section class="module-panel">
+              <div class="module-head">
+                <div>
+                  <p class="hud-label">NAVIGATION // 移動</p>
+                  <h3>Directional logic</h3>
+                </div>
+                <span class="module-tag">MAP</span>
+              </div>
+              <ul class="diagnostic-list">
+                <li>Arrow left/right changes major blades when you are not typing into an input.</li>
+                <li>Preview and send actions stay visible in the dock and in this overlay.</li>
+                <li>Escape closes the overlay without changing the underlying blade.</li>
+              </ul>
+            </section>
+          </div>
+        </div>
+      </section>
+    </div>
+  </body>
+</html>
