@@ -123,7 +123,7 @@ TRACE LAYER       :: SQLITE ACTIVITY LOG + EXPORT
   <li>No third-party runtime dependencies.</li>
 </ul>
 
-<h2>Further Functionality // 追加提案</h2>
+<h2>Future Functionality // 追加提案</h2>
 
 <ul>
   <li>Schedule or throttle batch releases with time windows to avoid peak-hour sends.</li>
