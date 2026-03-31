@@ -123,6 +123,17 @@ TRACE LAYER       :: SQLITE ACTIVITY LOG + EXPORT
   <li>No third-party runtime dependencies.</li>
 </ul>
 
+<h2>Future Functionality // 追加提案</h2>
+
+<ul>
+  <li>Schedule or throttle batch releases with time windows to avoid peak-hour sends.</li>
+  <li>Local bounce/unsubscribe import to automatically suppress future targets.</li>
+  <li>Recipient segmentation by tags or saved filters for repeatable campaign slices.</li>
+  <li>Per-recipient preview sampler that renders N random contacts for spot-checking templates.</li>
+  <li>Template variables library with required-field validation before preview.</li>
+  <li>Campaign analytics export (delivery outcomes, response tags) to a local CSV report.</li>
+</ul>
+
 <details>
   <summary><strong>ENV PROFILE // .env EXAMPLE</strong></summary>
   <br />
