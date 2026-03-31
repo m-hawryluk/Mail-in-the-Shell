@@ -260,7 +260,8 @@ class ActivityLogStore:
         self._initialized = False
         self._connection: sqlite3.Connection | None = None
 
-    def _get_connection(self) -> sqlite3.Connection:
+    def _open_connection(self) -> sqlite3.Connection:
+        """Return the persistent connection. Must be called under _conn_lock."""
         if self._connection is None:
             self._connection = sqlite3.connect(self.db_path, timeout=30.0, check_same_thread=False)
         return self._connection
@@ -277,7 +278,7 @@ class ActivityLogStore:
             except OSError:
                 pass
             with self._conn_lock:
-                connection = self._get_connection()
+                connection = self._open_connection()
                 connection.execute("PRAGMA journal_mode=WAL")
                 connection.execute("PRAGMA synchronous=NORMAL")
                 connection.execute(
@@ -330,7 +331,7 @@ class ActivityLogStore:
         if tone_value not in ALLOWED_LOG_TONES:
             tone_value = "info"
         with self._conn_lock:
-            connection = self._get_connection()
+            connection = self._open_connection()
             connection.execute(
                 """
                 INSERT INTO activity_logs (
@@ -368,7 +369,7 @@ class ActivityLogStore:
     def count(self) -> int:
         self.ensure_ready()
         with self._conn_lock:
-            connection = self._get_connection()
+            connection = self._open_connection()
             row = connection.execute("SELECT COUNT(*) FROM activity_logs").fetchone()
         return int(row[0] if row else 0)
 
@@ -392,7 +393,7 @@ class ActivityLogStore:
             ]
         )
         with self._conn_lock:
-            connection = self._get_connection()
+            connection = self._open_connection()
             rows = connection.execute(
                 """
                 SELECT
