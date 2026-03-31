@@ -11,11 +11,13 @@ from web_mailer_app import (
     ActivityLogStore,
     FINISHED_JOB_TTL_SECONDS,
     SendJobStore,
+    SessionStore,
     TEST_EMAIL_RECIPIENT,
     extract_request_access_token,
     is_loopback_host,
     list_saved_records,
     migrate_profile_defaults,
+    profile_without_password,
     sanitize_preview_html,
     session_mode_for_request,
     test_email_render_contact,
@@ -233,6 +235,92 @@ class SendJobStoreTests(unittest.TestCase):
 
         with self.assertRaises(SystemExit):
             store.public(job_id, "session-1")
+
+
+class SessionPurgeRateLimitTests(unittest.TestCase):
+    def test_purge_is_skipped_within_interval(self) -> None:
+        store = SessionStore()
+        session, _ = store.get_or_create(None)
+
+        session2, _ = store.get_or_create(None)
+        session2_id = session2["id"]
+        session2["last_seen"] = 0.0
+
+        result2 = store.get(session2_id)
+        self.assertIsNotNone(result2)
+
+        session2["last_seen"] = 0.0
+        store._last_purge = 0.0
+        result3 = store.get(session2_id)
+        self.assertIsNone(result3)
+
+
+class ProfileWithoutPasswordTests(unittest.TestCase):
+    def test_removes_password_key(self) -> None:
+        profile = {"host": "smtp.example.com", "password": "secret", "port": 587}
+        result = profile_without_password(profile)
+        self.assertNotIn("password", result)
+        self.assertEqual("smtp.example.com", result["host"])
+        self.assertEqual(587, result["port"])
+
+    def test_handles_profile_without_password_key(self) -> None:
+        profile = {"host": "smtp.example.com"}
+        result = profile_without_password(profile)
+        self.assertEqual({"host": "smtp.example.com"}, result)
+
+
+class ActivityLogStoreConnectionReuseTests(unittest.TestCase):
+    def test_multiple_appends_reuse_connection(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = ActivityLogStore(Path(temp_dir) / "test.db")
+            for i in range(5):
+                store.append(
+                    source="test",
+                    title=f"Event {i}",
+                    message=f"Message {i}",
+                    tone="info",
+                    session_id="s1",
+                )
+            self.assertEqual(5, store.count())
+            self.assertIsNotNone(store._connection)
+
+
+class SendJobStorePurgeRateLimitTests(unittest.TestCase):
+    def test_purge_is_throttled(self) -> None:
+        store = SendJobStore()
+        job_id = "job-1"
+        store._jobs[job_id] = {
+            "id": job_id,
+            "session_id": "session-1",
+            "campaign_key": "campaign-1",
+            "status": "completed",
+            "created_at": "2026-03-30T00:00:00+00:00",
+            "updated_at": "2026-03-30T00:00:00+00:00",
+            "created_at_epoch": time.time() - FINISHED_JOB_TTL_SECONDS - 10,
+            "updated_at_epoch": time.time() - FINISHED_JOB_TTL_SECONDS - 10,
+            "finished_at_epoch": time.time() - FINISHED_JOB_TTL_SECONDS - 10,
+            "message": "done",
+            "batch_total": 1,
+            "processed": 1,
+            "sent_count": 1,
+            "failed_count": 0,
+            "current_recipient": "",
+            "sent": [],
+            "failed": [],
+            "warnings": [],
+            "preview": None,
+            "error": "",
+        }
+
+        store._last_purge = time.time()
+        with store._lock:
+            store._purge_finished_locked()
+        self.assertIn(job_id, store._jobs)
+
+        store._last_purge = 0.0
+        with store._lock:
+            store._purge_finished_locked()
+        self.assertNotIn(job_id, store._jobs)
 
 
 if __name__ == "__main__":

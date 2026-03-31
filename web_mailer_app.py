@@ -256,7 +256,14 @@ class ActivityLogStore:
     def __init__(self, db_path: Path) -> None:
         self.db_path = db_path
         self._init_lock = threading.Lock()
+        self._conn_lock = threading.Lock()
         self._initialized = False
+        self._connection: sqlite3.Connection | None = None
+
+    def _get_connection(self) -> sqlite3.Connection:
+        if self._connection is None:
+            self._connection = sqlite3.connect(self.db_path, timeout=30.0, check_same_thread=False)
+        return self._connection
 
     def ensure_ready(self) -> None:
         if self._initialized:
@@ -269,8 +276,8 @@ class ActivityLogStore:
                 self.db_path.parent.chmod(0o700)
             except OSError:
                 pass
-            connection = sqlite3.connect(self.db_path, timeout=30.0)
-            try:
+            with self._conn_lock:
+                connection = self._get_connection()
                 connection.execute("PRAGMA journal_mode=WAL")
                 connection.execute("PRAGMA synchronous=NORMAL")
                 connection.execute(
@@ -297,8 +304,6 @@ class ActivityLogStore:
                     "CREATE INDEX IF NOT EXISTS idx_activity_logs_campaign_key ON activity_logs(campaign_key)"
                 )
                 connection.commit()
-            finally:
-                connection.close()
             try:
                 self.db_path.chmod(0o600)
             except OSError:
@@ -324,8 +329,8 @@ class ActivityLogStore:
         tone_value = str(tone or "info").strip().lower()
         if tone_value not in ALLOWED_LOG_TONES:
             tone_value = "info"
-        connection = sqlite3.connect(self.db_path, timeout=30.0)
-        try:
+        with self._conn_lock:
+            connection = self._get_connection()
             connection.execute(
                 """
                 INSERT INTO activity_logs (
@@ -355,8 +360,6 @@ class ActivityLogStore:
                 ),
             )
             connection.commit()
-        finally:
-            connection.close()
         try:
             self.db_path.chmod(0o600)
         except OSError:
@@ -364,11 +367,9 @@ class ActivityLogStore:
 
     def count(self) -> int:
         self.ensure_ready()
-        connection = sqlite3.connect(self.db_path, timeout=30.0)
-        try:
+        with self._conn_lock:
+            connection = self._get_connection()
             row = connection.execute("SELECT COUNT(*) FROM activity_logs").fetchone()
-        finally:
-            connection.close()
         return int(row[0] if row else 0)
 
     def export_csv_bytes(self) -> bytes:
@@ -390,8 +391,8 @@ class ActivityLogStore:
                 "row_number",
             ]
         )
-        connection = sqlite3.connect(self.db_path, timeout=30.0)
-        try:
+        with self._conn_lock:
+            connection = self._get_connection()
             rows = connection.execute(
                 """
                 SELECT
@@ -410,8 +411,6 @@ class ActivityLogStore:
                 ORDER BY id
                 """
             ).fetchall()
-        finally:
-            connection.close()
         for row in rows:
             writer.writerow(row)
         return ("\ufeff" + buffer.getvalue()).encode("utf-8")
@@ -638,7 +637,9 @@ def normalize_sent_copy_payload(payload: dict[str, Any], smtp_profile: dict[str,
 
 
 def profile_without_password(profile: dict[str, Any]) -> dict[str, Any]:
-    return {key: value for key, value in profile.items() if key != "password"}
+    result = profile.copy()
+    result.pop("password", None)
+    return result
 
 
 def resolve_password(profile: dict[str, Any]) -> dict[str, Any]:
@@ -970,9 +971,12 @@ def current_password_status(profile: dict[str, Any]) -> bool:
 
 
 class SessionStore:
+    _PURGE_INTERVAL = 60.0
+
     def __init__(self) -> None:
         self._lock = threading.Lock()
         self._sessions: dict[str, dict[str, Any]] = {}
+        self._last_purge: float = 0.0
 
     def get(self, session_id: str | None) -> dict[str, Any] | None:
         if not session_id:
@@ -1005,7 +1009,11 @@ class SessionStore:
             return session, True
 
     def _purge_expired(self) -> None:
-        cutoff = time.time() - SESSION_TTL_SECONDS
+        now = time.time()
+        if now - self._last_purge < self._PURGE_INTERVAL:
+            return
+        self._last_purge = now
+        cutoff = now - SESSION_TTL_SECONDS
         expired = [session_id for session_id, data in self._sessions.items() if data["last_seen"] < cutoff]
         for session_id in expired:
             self._sessions.pop(session_id, None)
@@ -1015,11 +1023,14 @@ SESSION_STORE = SessionStore()
 
 
 class SendJobStore:
+    _PURGE_INTERVAL = 30.0
+
     def __init__(self) -> None:
         self._lock = threading.Lock()
         self._jobs: dict[str, dict[str, Any]] = {}
         self._active_by_session: dict[str, str] = {}
         self._active_by_campaign: dict[str, str] = {}
+        self._last_purge: float = 0.0
 
     def start(self, session_id: str, campaign_key_value: str, state_file: Path, payload: dict[str, Any]) -> dict[str, Any]:
         campaign_lock: CampaignLock | None = None
@@ -1251,7 +1262,11 @@ class SendJobStore:
             )
 
     def _purge_finished_locked(self) -> None:
-        cutoff = time.time() - FINISHED_JOB_TTL_SECONDS
+        now = time.time()
+        if now - self._last_purge < self._PURGE_INTERVAL:
+            return
+        self._last_purge = now
+        cutoff = now - FINISHED_JOB_TTL_SECONDS
         expired_job_ids = [
             job_id
             for job_id, job in self._jobs.items()
@@ -1351,7 +1366,15 @@ def run_send_job(job_id: str, payload: dict[str, Any]) -> None:
                 except Exception:
                     pass
 
-        refreshed_context = build_campaign_context(payload)
+        refreshed_analysis = analyze_contacts(
+            contacts=context["contacts"],
+            state=state,
+            email_column="email",
+            required_fields=context["templates"].required_fields,
+            max_attempts_per_row=context["max_attempts_per_row"],
+            retry_exhausted=context["retry_exhausted"],
+        )
+        context["analysis"] = refreshed_analysis
         sent = result["sent"]
         failed = result["failed"]
         warnings = result["warnings"]
@@ -1366,7 +1389,7 @@ def run_send_job(job_id: str, payload: dict[str, Any]) -> None:
             job_id,
             status="completed",
             message=summary_message,
-            preview=preview_payload_from_context(refreshed_context),
+            preview=preview_payload_from_context(context),
         )
     except SystemExit as exc:
         SEND_JOB_STORE.finish(job_id, status="failed", message=str(exc), error=str(exc))

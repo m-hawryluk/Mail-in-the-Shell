@@ -13,6 +13,7 @@ from bulk_mailer import (
     normalize_email,
     release_campaign_lock,
     save_state,
+    strip_html_to_text,
 )
 
 
@@ -120,6 +121,39 @@ else:
 
         self.assertEqual(2, result.returncode)
         self.assertIn("locked", result.stdout)
+
+
+class StripHtmlToTextTests(unittest.TestCase):
+    def test_strips_tags_and_preserves_text(self) -> None:
+        html = "<html><body><p>Hello <b>World</b></p></body></html>"
+        result = strip_html_to_text(html)
+        self.assertIn("Hello", result)
+        self.assertIn("World", result)
+        self.assertNotIn("<p>", result)
+        self.assertNotIn("<b>", result)
+
+    def test_converts_links_to_text_with_url(self) -> None:
+        html = '<a href="https://example.com">Click here</a>'
+        result = strip_html_to_text(html)
+        self.assertIn("Click here", result)
+        self.assertIn("https://example.com", result)
+
+    def test_strips_scripts_and_styles(self) -> None:
+        html = "<style>body{color:red;}</style><script>alert(1)</script><p>Safe</p>"
+        result = strip_html_to_text(html)
+        self.assertIn("Safe", result)
+        self.assertNotIn("alert", result)
+        self.assertNotIn("color:red", result)
+
+    def test_converts_br_to_newlines(self) -> None:
+        html = "Line1<br>Line2<BR/>Line3"
+        result = strip_html_to_text(html)
+        self.assertIn("Line1\nLine2\nLine3", result)
+
+    def test_collapses_whitespace_runs(self) -> None:
+        html = "<p>  lots   of    spaces  </p>"
+        result = strip_html_to_text(html)
+        self.assertEqual("lots of spaces", result)
 
 
 if __name__ == "__main__":
