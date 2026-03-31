@@ -35,6 +35,20 @@ EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 PLACEHOLDER_PATTERN = re.compile(r"{{\s*([A-Za-z0-9_]+)\s*}}")
 TRUE_VALUES = {"1", "true", "yes", "on"}
 
+_HTML_COMMENT_PATTERN = re.compile(r"(?is)<!--.*?-->")
+_HTML_HEAD_PATTERN = re.compile(r"(?is)<head\b.*?>.*?</head>")
+_HTML_SCRIPT_STYLE_PATTERN = re.compile(r"(?is)<(script|style)\b.*?>.*?</\1>")
+_HTML_BR_PATTERN = re.compile(r"(?i)<br\s*/?>")
+_HTML_P_END_PATTERN = re.compile(r"(?i)</p\s*>")
+_HTML_DIV_END_PATTERN = re.compile(r"(?i)</div\s*>")
+_HTML_LI_END_PATTERN = re.compile(r"(?i)</li\s*>")
+_HTML_TR_END_PATTERN = re.compile(r"(?i)</tr\s*>")
+_HTML_TD_END_PATTERN = re.compile(r"(?i)</td\s*>")
+_HTML_LI_START_PATTERN = re.compile(r"(?i)<li\b[^>]*>")
+_HTML_ANCHOR_PATTERN = re.compile(r"(?is)<a\b[^>]*href=[\"']([^\"']+)[\"'][^>]*>(.*?)</a>")
+_HTML_TAG_PATTERN = re.compile(r"(?s)<[^>]+>")
+_WHITESPACE_RUN_PATTERN = re.compile(r"[ \t]+")
+
 
 @dataclass
 class SMTPConfig:
@@ -143,24 +157,24 @@ def env_first(*names: str) -> str | None:
 
 
 def strip_html_to_text(html_content: str) -> str:
-    text = re.sub(r"(?is)<!--.*?-->", "", html_content)
-    text = re.sub(r"(?is)<head\b.*?>.*?</head>", "", text)
-    text = re.sub(r"(?is)<(script|style)\b.*?>.*?</\1>", "", text)
-    text = re.sub(r"(?i)<br\s*/?>", "\n", text)
-    text = re.sub(r"(?i)</p\s*>", "\n\n", text)
-    text = re.sub(r"(?i)</div\s*>", "\n", text)
-    text = re.sub(r"(?i)</li\s*>", "\n", text)
-    text = re.sub(r"(?i)</tr\s*>", "\n", text)
-    text = re.sub(r"(?i)</td\s*>", " ", text)
-    text = re.sub(r"(?i)<li\b[^>]*>", "- ", text)
-    text = re.sub(r"(?is)<a\b[^>]*href=[\"']([^\"']+)[\"'][^>]*>(.*?)</a>", r"\2 (\1)", text)
-    text = re.sub(r"(?s)<[^>]+>", "", text)
+    text = _HTML_COMMENT_PATTERN.sub("", html_content)
+    text = _HTML_HEAD_PATTERN.sub("", text)
+    text = _HTML_SCRIPT_STYLE_PATTERN.sub("", text)
+    text = _HTML_BR_PATTERN.sub("\n", text)
+    text = _HTML_P_END_PATTERN.sub("\n\n", text)
+    text = _HTML_DIV_END_PATTERN.sub("\n", text)
+    text = _HTML_LI_END_PATTERN.sub("\n", text)
+    text = _HTML_TR_END_PATTERN.sub("\n", text)
+    text = _HTML_TD_END_PATTERN.sub(" ", text)
+    text = _HTML_LI_START_PATTERN.sub("- ", text)
+    text = _HTML_ANCHOR_PATTERN.sub(r"\2 (\1)", text)
+    text = _HTML_TAG_PATTERN.sub("", text)
     text = html.unescape(text)
     text = text.replace("\r\n", "\n").replace("\r", "\n")
     cleaned_lines: list[str] = []
     blank_streak = 0
     for raw_line in text.split("\n"):
-        normalized_line = re.sub(r"[ \t]+", " ", raw_line).strip()
+        normalized_line = _WHITESPACE_RUN_PATTERN.sub(" ", raw_line).strip()
         if not normalized_line:
             if blank_streak == 0:
                 cleaned_lines.append("")
